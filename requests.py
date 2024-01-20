@@ -1,27 +1,42 @@
 import logging
 import os
 import re
+import time
 from typing import Union
 from urllib.parse import quote
+from fake_useragent import UserAgent
 
 import httpx
 from tqdm import tqdm
 
 BASE_API_URL = 'https://cloud.mail.ru/api/v2/'
 DOWNLOAD_FOLDER = "Downloads"
+MAX_RETRY = 5
+
+ua = UserAgent()
+
+headers = {
+    'User-Agent': ua.random,
+}
 
 
-def download_file(link: str, output_path: str, filename: str) -> bool:
+def download_file(link: str, output_path: str, filename: str, retry: int = MAX_RETRY) -> bool:
     try:
         file_path = os.path.join(DOWNLOAD_FOLDER, output_path, filename)
 
-        with httpx.stream("GET", link, follow_redirects=True) as response:
+        with httpx.stream("GET", link, follow_redirects=True, headers=headers) as response:
             os.makedirs(os.path.join(DOWNLOAD_FOLDER, output_path), exist_ok=True)
 
             total_size = int(response.headers.get("content-length", 0))
 
             if total_size == 0:
-                raise Exception("Zero file size")
+                if retry > 0:
+                    time_sleep = (MAX_RETRY - retry + 1) * 60
+                    logging.warning(f"Sleep for {time_sleep} s")
+                    time.sleep(time_sleep)
+                    return download_file(link, output_path, filename, retry - 1)
+                else:
+                    raise Exception("Zero file size")
 
             if os.path.exists(file_path):
                 downloaded_size = os.path.getsize(file_path)
@@ -61,7 +76,7 @@ def get_x_page_id(url: str) -> Union[str, bool]:
 
 def get_base_url(x_paid_id: str) -> Union[str, bool]:
     url = f'{BASE_API_URL}dispatcher?x-page-id={x_paid_id}'
-    json_result = httpx.get(url, follow_redirects=True).json()
+    json_result = httpx.get(url, follow_redirects=True, headers=headers).json()
 
     try:
         weblink_get_list = json_result['body']['weblink_get']
@@ -80,7 +95,7 @@ def get_base_url(x_paid_id: str) -> Union[str, bool]:
 
 def get_all_files(weblink: str, x_page_id: str, base_url: str, folder: str = '') -> Union[list, bool]:
     url = f'{BASE_API_URL}folder?weblink={weblink}&x-page-id={x_page_id}'
-    json_result = httpx.get(url, follow_redirects=True).json()
+    json_result = httpx.get(url, follow_redirects=True, headers=headers).json()
 
     files = []
     folder = os.path.join(folder, json_result['body']['name'])
@@ -110,5 +125,5 @@ def get_all_files(weblink: str, x_page_id: str, base_url: str, folder: str = '')
     return files
 
 
-def remove_from_uri_filename(uri, filename):
+def remove_from_uri_filename(uri: str, filename: str) -> str:
     return uri.replace('/' + quote(filename), '')
