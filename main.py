@@ -6,8 +6,8 @@ from requests import (
 
 links_file = 'links.txt'
 
-with open(links_file, "r") as file:
-    links = [line.strip() for line in file if line.strip().startswith("http")]
+with open(links_file, 'r') as file:
+    links = [line.strip() for line in file if line.strip().startswith('http')]
 
 for link in links:
     link_id = get_link_id(link)
