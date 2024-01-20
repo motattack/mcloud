@@ -54,14 +54,14 @@ def get_link_id(url: str) -> Union[str, bool]:
 
 
 def get_x_page_id(url: str) -> Union[str, bool]:
-    r = httpx.get(url)
+    r = httpx.get(url, follow_redirects=True)
     match = re.search(r'pageId[\'"]*:[\'"]*([^"\'\s,]+)', r.text, re.S)
     return match.group(1) if match else False
 
 
 def get_base_url(x_paid_id: str) -> Union[str, bool]:
     url = f'{BASE_API_URL}dispatcher?x-page-id={x_paid_id}'
-    json_result = httpx.get(url).json()
+    json_result = httpx.get(url, follow_redirects=True).json()
 
     try:
         weblink_get_list = json_result['body']['weblink_get']
@@ -80,7 +80,7 @@ def get_base_url(x_paid_id: str) -> Union[str, bool]:
 
 def get_all_files(weblink: str, x_page_id: str, base_url: str, folder: str = '') -> Union[list, bool]:
     url = f'{BASE_API_URL}folder?weblink={weblink}&x-page-id={x_page_id}'
-    json_result = httpx.get(url).json()
+    json_result = httpx.get(url, follow_redirects=True).json()
 
     files = []
     folder = os.path.join(folder, json_result['body']['name'])
