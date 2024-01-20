@@ -1,4 +1,8 @@
-from requests import get_x_page_id, get_base_url, get_all_files, get_link_id, download_file, uri_one_file
+from requests import (
+    get_x_page_id, get_base_url, get_link_id,
+    get_all_files,
+    download_file, remove_from_uri_filename
+)
 
 links_file = 'links.txt'
 
@@ -18,7 +22,11 @@ for link in links:
     if count_files == 0:
         continue
 
-    for file in files:
-        uri, out, filename = file.values()
-        uri = uri_one_file(uri, filename, count_files)
+    if count_files == 1:
+        uri, out, filename = files[0].values()
+        uri = remove_from_uri_filename(uri, filename)
         download_file(uri, out, filename)
+    else:
+        for file in files:
+            uri, out, filename = file.values()
+            download_file(uri, out, filename)

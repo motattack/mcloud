@@ -110,7 +110,5 @@ def get_all_files(weblink: str, x_page_id: str, base_url: str, folder: str = '')
     return files
 
 
-def uri_one_file(uri, filename, count_files):
-    if count_files == 1:
-        uri = uri.replace('/' + quote(filename), '')
-    return uri
+def remove_from_uri_filename(uri, filename):
+    return uri.replace('/' + quote(filename), '')
